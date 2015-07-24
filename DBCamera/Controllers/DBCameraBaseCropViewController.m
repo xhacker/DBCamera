@@ -21,7 +21,6 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
 
 @interface DBCameraBaseCropViewController () <UIGestureRecognizerDelegate>
 @property (nonatomic,strong) UIPanGestureRecognizer *panRecognizer;
-@property (nonatomic,strong) UIRotationGestureRecognizer *rotationRecognizer;
 @property (nonatomic,strong) UIPinchGestureRecognizer *pinchRecognizer;
 @property (nonatomic,strong) UITapGestureRecognizer *tapRecognizer;
 @property (nonatomic, weak) UIView <DBCameraCropRect> *frameView;
@@ -65,13 +64,6 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
     [panRecognizer setEnabled:self.panEnabled];
     [self.frameView addGestureRecognizer:panRecognizer];
     [self setPanRecognizer:panRecognizer];
-    
-    UIRotationGestureRecognizer *rotationRecognizer = [[UIRotationGestureRecognizer alloc] initWithTarget:self action:@selector(handleRotation:)];
-    [rotationRecognizer setCancelsTouchesInView:NO];
-    [rotationRecognizer setDelegate:self];
-    [rotationRecognizer setEnabled:self.rotateEnabled];
-    [self.frameView addGestureRecognizer:rotationRecognizer];
-    [self setRotationRecognizer:rotationRecognizer];
     
     UIPinchGestureRecognizer *pinchRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(handlePinch:)];
     [pinchRecognizer setCancelsTouchesInView:NO];
@@ -287,25 +279,6 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
     }
 }
 
-- (void) handleRotation:(UIRotationGestureRecognizer *)recognizer
-{
-    if ( [self handleGestureState:recognizer.state] ) {
-        if ( recognizer.state == UIGestureRecognizerStateBegan )
-            self.rotationCenter = self.touchCenter;
-
-        CGFloat deltaX = self.rotationCenter.x - self.imageView.bounds.size.width * .5;
-        CGFloat deltaY = self.rotationCenter.y - self.imageView.bounds.size.height * .5;
-        
-        CGAffineTransform transform =  CGAffineTransformTranslate( self.imageView.transform, deltaX, deltaY );
-        transform = CGAffineTransformRotate(transform, recognizer.rotation);
-        transform = CGAffineTransformTranslate(transform, -deltaX, -deltaY);
-        self.imageView.transform = transform;
-        [self checkBoundsWithTransform:transform];
-        
-        recognizer.rotation = 0;
-    }
-}
-
 - (void) handlePinch:(UIPinchGestureRecognizer *)recognizer
 {
     if([self handleGestureState:recognizer.state]) {
@@ -406,12 +379,6 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
 {
     _scaleEnabled = scaleEnabled;
     [self.pinchRecognizer setEnabled:_scaleEnabled];
-}
-
-- (void) setRotateEnabled:(BOOL)rotateEnabled
-{
-    _rotateEnabled = rotateEnabled;
-    [self.rotationRecognizer setEnabled:YES];
 }
 
 - (void) setTapToResetEnabled:(BOOL)tapToResetEnabled
