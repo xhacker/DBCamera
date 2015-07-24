@@ -254,7 +254,7 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
 
 - (void) checkBoundsWithTransform:(CGAffineTransform)transform
 {
-    CGRect r1 = [self boundingBoxForRect:self.cropRect rotatedByRadians:[self imageRotation]];
+    CGRect cropRect = [self boundingBoxForRect:self.cropRect rotatedByRadians:[self imageRotation]];
     Rectangle r2 = [self applyTransform:transform toRect:self.initialImageFrame];
     
     CGAffineTransform t = CGAffineTransformMakeTranslation(CGRectGetMidX(self.cropRect), CGRectGetMidY(self.cropRect));
@@ -262,9 +262,58 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
     t = CGAffineTransformTranslate(t, -CGRectGetMidX(self.cropRect), -CGRectGetMidY(self.cropRect));
     
     Rectangle r3 = [self applyTransform:t toRectangle:r2];
+    CGRect imageRect = [self CGRectFromRectangle:r3];
     
-    if( CGRectContainsRect( [self CGRectFromRectangle:r3], r1 ) )
+    if (CGRectContainsRect(imageRect, cropRect)) {
         self.validTransform = transform;
+    }
+    else {
+        // set to a most close valid transform
+        
+        // width is too small
+        if (imageRect.size.width < cropRect.size.width) {
+            CGFloat scale = cropRect.size.width / imageRect.size.width;
+            CGAffineTransform t = CGAffineTransformMakeScale(scale, scale);
+            imageRect = CGRectApplyAffineTransform(imageRect, t);
+            transform = CGAffineTransformConcat(transform, t);
+        }
+        
+        // height is too small
+        if (imageRect.size.height < cropRect.size.height) {
+            CGFloat scale = cropRect.size.height / imageRect.size.height;
+            CGAffineTransform scaleTransform = CGAffineTransformMakeScale(scale, scale);
+            imageRect = CGRectApplyAffineTransform(imageRect, scaleTransform);
+            transform = CGAffineTransformConcat(transform, scaleTransform);
+        }
+        
+        // crop rect x out of bound
+        if (CGRectGetMinX(cropRect) < CGRectGetMinX(imageRect)) {
+            CGAffineTransform t = CGAffineTransformMakeTranslation(CGRectGetMinX(cropRect) - CGRectGetMinX(imageRect), 0);
+            imageRect = CGRectApplyAffineTransform(imageRect, t);
+            transform = CGAffineTransformConcat(transform, t);
+        }
+        if (CGRectGetMaxX(cropRect) > CGRectGetMaxX(imageRect)) {
+            CGAffineTransform t = CGAffineTransformMakeTranslation(CGRectGetMaxX(cropRect) - CGRectGetMaxX(imageRect), 0);
+            imageRect = CGRectApplyAffineTransform(imageRect, t);
+            transform = CGAffineTransformConcat(transform, t);
+        }
+        
+        // crop rect y out of bound
+        if (CGRectGetMinY(cropRect) < CGRectGetMinY(imageRect)) {
+            CGAffineTransform t = CGAffineTransformMakeTranslation(0, CGRectGetMinY(cropRect) - CGRectGetMinY(imageRect));
+            imageRect = CGRectApplyAffineTransform(imageRect, t);
+            transform = CGAffineTransformConcat(transform, t);
+        }
+        if (CGRectGetMaxY(cropRect) > CGRectGetMaxY(imageRect)) {
+            CGAffineTransform t = CGAffineTransformMakeTranslation(0, CGRectGetMaxY(cropRect) - CGRectGetMaxY(imageRect));
+            imageRect = CGRectApplyAffineTransform(imageRect, t);
+            transform = CGAffineTransformConcat(transform, t);
+        }
+        
+        if (CGRectContainsRect(imageRect, cropRect)) {
+            self.validTransform = transform;
+        }
+    }
 }
 
 - (void) handlePan:(UIPanGestureRecognizer *)recognizer
