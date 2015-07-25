@@ -270,22 +270,13 @@ static const NSTimeInterval kAnimationIntervalTransform = 0.2;
     else {
         // set to a most close valid transform
         
-        // width is too small
-        if (imageRect.size.width < cropRect.size.width) {
-            CGFloat scale = cropRect.size.width / imageRect.size.width;
-            CGAffineTransform t = CGAffineTransformMakeScale(scale, scale);
-            imageRect = CGRectApplyAffineTransform(imageRect, t);
-            transform = CGAffineTransformConcat(transform, t);
+        // width or height is too small
+        if (imageRect.size.width < cropRect.size.width ||
+            imageRect.size.height < cropRect.size.height) {
+            transform.a = transform.d = 1;
+            imageRect = CGRectApplyAffineTransform(self.initialImageFrame, transform);
         }
-        
-        // height is too small
-        if (imageRect.size.height < cropRect.size.height) {
-            CGFloat scale = cropRect.size.height / imageRect.size.height;
-            CGAffineTransform scaleTransform = CGAffineTransformMakeScale(scale, scale);
-            imageRect = CGRectApplyAffineTransform(imageRect, scaleTransform);
-            transform = CGAffineTransformConcat(transform, scaleTransform);
-        }
-        
+
         // crop rect x out of bound
         if (CGRectGetMinX(cropRect) < CGRectGetMinX(imageRect)) {
             CGAffineTransform t = CGAffineTransformMakeTranslation(CGRectGetMinX(cropRect) - CGRectGetMinX(imageRect), 0);
